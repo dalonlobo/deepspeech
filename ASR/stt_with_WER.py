@@ -140,7 +140,11 @@ def main(fpath, ds):
             
             reference = process_srt_text(subtitle.text)
             
-            wer_of_deepspeech = text.wer(reference, deepspeech_stt)
+            try:
+                wer_of_deepspeech = text.wer(reference, deepspeech_stt)
+            except ZeroDivisionError as e:
+                print(str(e))
+                wer_of_deepspeech = 1.0
             
             # liv.ai model
             # Long audio
@@ -177,20 +181,30 @@ def main(fpath, ds):
                 print("Something went wrong in livai")
                 print("Check: https://liv.ai/api/long_audio/#get-session-status")
             else:
-                # Proceed only if the transription is available
-                if liv_trans_status.json()["transcribed_status"]:
-                    # Get the transcription
+                
+                # Wait until the audio is processed
+                while not liv_trans_status.json()["transcribed_status"]:
+                    time.sleep(5)  # Respect the rate limit
                     headers = {'Authorization' : 'Token ' + TOKEN}
                     params = {'app_session_id' : session_id}
-                    url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
-                    res3 = requests.get(url, headers = headers, params = params)
-    #                print(json.dumps(res3.json(), indent=4, sort_keys=True))
-                    liv_response_text = str(res3.json()["transcriptions"][0]["utf_text"])
+                    url = 'https://dev.liv.ai/liv_speech_api/session/status/'
+                    liv_trans_status = requests.get(url, headers = headers, params = params)
+
+                # Proceed only if the transription is available
+
+                # Get the transcription
+                headers = {'Authorization' : 'Token ' + TOKEN}
+                params = {'app_session_id' : session_id}
+                url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
+                res3 = requests.get(url, headers = headers, params = params)
+#                print(json.dumps(res3.json(), indent=4, sort_keys=True))
+                liv_response_text = str(res3\
+                                        .json()["transcriptions"][0]["utf_text"]\
+                                        .encode('utf-8'))
+                try:
                     wer_of_livai = text.wer(reference, liv_response_text)
-                else:
-                    print("Transcription status is: ")
-                    print(liv_trans_status.json()["upload_status"])
-                    liv_response_text = ""
+                except ZeroDivisionError as e:
+                    print(str(e))
                     wer_of_livai = 1.0
             print("Deepspeech WER vs Livai WER")
             print(wer_of_deepspeech, wer_of_livai)
