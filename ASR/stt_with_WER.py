@@ -5,7 +5,7 @@ Created on Thu Dec 21 09:41:10 2017
 
 @author: dalonlobo
 """
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import subprocess
 import sys
@@ -52,48 +52,10 @@ def process_srt_text(text):
     text = re.sub('[^A-Za-z0-9\s\']+', '', text)
     return text.lower()
     
-def main(fpath):
+def main(fpath, ds):
     
     # Buffer size for audio segments in milliseconds
     buffer_in_ms = 200
-    
-    MSL = 500 # minimum silence length in ms
-    
-    # These constants control the beam search decoder
-
-    # Beam width used in the CTC decoder when building candidate transcriptions
-    BEAM_WIDTH = 500
-    
-    # The alpha hyperparameter of the CTC decoder. Language Model weight
-    # LM_WEIGHT = 1.75
-    LM_WEIGHT = 1.75
-    
-    # The beta hyperparameter of the CTC decoder. Word insertion weight (penalty)
-    WORD_COUNT_WEIGHT = 1.00
-    
-    # Valid word insertion weight. This is used to lessen the word insertion penalty
-    # when the inserted word is part of the vocabulary
-    VALID_WORD_COUNT_WEIGHT = 1.00
-    
-    
-    # These constants are tied to the shape of the graph used (changing them changes
-    # the geometry of the first layer), so make sure you use the same constants that
-    # were used during training
-    
-    # Number of MFCC features to use
-    N_FEATURES = 26
-    
-    # Size of the context window used for producing timesteps in the input vector
-    N_CONTEXT = 9
-    
-#    Liv.ai authentication token
-    TOKEN = 'f6406f7a3ecba98a61db03be55b408f957728d85' 
-    
-#   Use the following for defaults
-    model = "/home/dalonlobo/deepspeech_models/models/output_graph.pb"
-    alphabet = "/home/dalonlobo/deepspeech_models/models/alphabet.txt"
-    lm = "/home/dalonlobo/deepspeech_models/models/lm.binary"
-    trie = "/home/dalonlobo/deepspeech_models/models/trie"
     
 #    Read the videos from the folder
 #    for root, subdirs, files in os.walk(walk_dir):
@@ -104,7 +66,7 @@ def main(fpath):
         srt_fpath = glob.glob(fpath + "/*.srt")[0]
         
         # Create temporary directory, to hold the audio chunks
-        tmp_dir = os.path.join(os.path.dirname(fpath), "tmp")
+        tmp_dir = os.path.join(fpath, "tmp")
         
         try:
             # Clearing the contents of the directory
@@ -130,24 +92,6 @@ def main(fpath):
         
         
         audioSegment = AudioSegment.from_wav(output_wav_path)
-        
-        # Loading the deepspeech module
-        print('Loading model from file %s' % (model), file=sys.stderr)
-        model_load_start = timer()
-        ds = Model(model, N_FEATURES, N_CONTEXT, 
-                   alphabet, BEAM_WIDTH)
-        model_load_end = timer() - model_load_start
-        print('Loaded model in %0.3fs.' % (model_load_end), file=sys.stderr)
-    
-        if lm and trie:
-            print('Loading language model from files %s %s' % (lm, trie), 
-                    file=sys.stderr)
-            lm_load_start = timer()
-            ds.enableDecoderWithLM(alphabet, lm, trie, LM_WEIGHT,
-                                   WORD_COUNT_WEIGHT, VALID_WORD_COUNT_WEIGHT)
-            lm_load_end = timer() - lm_load_start
-            print('Loaded language model in %0.3fs.' % (lm_load_end), 
-                  file=sys.stderr)
         
         # Insert the WER into a dataframe 
         wer_df = pd.DataFrame()
@@ -188,9 +132,9 @@ def main(fpath):
             print('Running inference.', file=sys.stderr)
             inference_start = timer()
             deepspeech_stt = ds.stt(audio, fs)
-            print(deepspeech_stt)
+#            print(deepspeech_stt)
             inference_end = timer() - inference_start
-            print('Inference took %0.3fs for %f audio file.' % (inference_end, 
+            print('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, 
                                                                     audio_length), 
                     file=sys.stderr)
             
@@ -217,7 +161,7 @@ def main(fpath):
     #        print(json.dumps(res2.json(), indent=4, sort_keys=True))
             
             liv_status = liv_trans_status.json()["upload_status"]
-            while liv_status in ["10", "11", "20"]:
+            while liv_status in ["0","10", "11", "20"]:
                 time.sleep(5) # Liv ai is rate limited 1call per second
                 # Check the status
             
@@ -241,27 +185,104 @@ def main(fpath):
                     url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
                     res3 = requests.get(url, headers = headers, params = params)
     #                print(json.dumps(res3.json(), indent=4, sort_keys=True))
-                    wer_of_livai = text.wer(reference, 
-                                            str(res3.json()["transcriptions"][0]["utf_text"]))
+                    liv_response_text = str(res3.json()["transcriptions"][0]["utf_text"])
+                    wer_of_livai = text.wer(reference, liv_response_text)
                 else:
+                    print("Transcription status is: ")
+                    print(liv_trans_status.json()["upload_status"])
+                    liv_response_text = ""
                     wer_of_livai = 1.0
             print("Deepspeech WER vs Livai WER")
             print(wer_of_deepspeech, wer_of_livai)
             
             # Insert the data into the dataframe
             wer_df = wer_df.append([[wer_of_deepspeech, 
-                                     wer_of_livai]], ignore_index=True)
+                                     wer_of_livai,
+                                     reference,
+                                     deepspeech_stt,
+                                     liv_response_text]], ignore_index=True)
+    except KeyboardInterrupt as e:
+        print("You have exited the program!", file=sys.stderr)
     except Exception as e:
-        print(str(e))
+        print(str(e), file=sys.stderr)
     finally:
-        with open("DWtnKRL30jo.b", "wb") as f:
-            pickle(wer_df, f)
+        print("Writing output dataframe to:", os.path.join(fpath,"output_df.b"))
+        with open(os.path.join(fpath,"output_df.b"), "wb") as f:
+            wer_df.columns = ["Deepspeech WER", "Livai WER", "Reference",
+                              "Deepspeech hypothesis", "Livai hypothesis"]
+            pickle.dump(wer_df, f)
+            
+        # Clean up temporary directory
+        try:
+            # Clearing the contents of the directory
+            shutil.rmtree(tmp_dir)
+        except OSError as e:
+            print(str(e), file=sys.stderr)
         
         
 if __name__ == "__main__":
-    fpath = "/home/dalonlobo/deepspeech_models/deepspeech/ASR/youtube-dl-videos/DWtnKRL30jo/"
-    main(fpath)
+#    fpath = "/home/dalonlobo/deepspeech_models/deepspeech/ASR/youtube-dl-videos/DWtnKRL30jo/"
+        
+    MSL = 500 # minimum silence length in ms
+    
+    # These constants control the beam search decoder
+
+    # Beam width used in the CTC decoder when building candidate transcriptions
+    BEAM_WIDTH = 500
+    
+    # The alpha hyperparameter of the CTC decoder. Language Model weight
+    # LM_WEIGHT = 1.75
+    LM_WEIGHT = 1.75
+    
+    # The beta hyperparameter of the CTC decoder. Word insertion weight (penalty)
+    WORD_COUNT_WEIGHT = 1.00
+    
+    # Valid word insertion weight. This is used to lessen the word insertion penalty
+    # when the inserted word is part of the vocabulary
+    VALID_WORD_COUNT_WEIGHT = 1.00
     
     
+    # These constants are tied to the shape of the graph used (changing them changes
+    # the geometry of the first layer), so make sure you use the same constants that
+    # were used during training
     
+    # Number of MFCC features to use
+    N_FEATURES = 26
+    
+    # Size of the context window used for producing timesteps in the input vector
+    N_CONTEXT = 9
+    
+#    Liv.ai authentication token
+    TOKEN = 'f6406f7a3ecba98a61db03be55b408f957728d85' 
+    
+#   Use the following for defaults
+    model = "/home/dalonlobo/deepspeech_models/models/output_graph.pb"
+    alphabet = "/home/dalonlobo/deepspeech_models/models/alphabet.txt"
+    lm = "/home/dalonlobo/deepspeech_models/models/lm.binary"
+    trie = "/home/dalonlobo/deepspeech_models/models/trie"
+    
+    # Loading the deepspeech module
+    print('Loading model from file %s' % (model), file=sys.stderr)
+    model_load_start = timer()
+    ds = Model(model, N_FEATURES, N_CONTEXT, 
+               alphabet, BEAM_WIDTH)
+    model_load_end = timer() - model_load_start
+    print('Loaded model in %0.3fs.' % (model_load_end), file=sys.stderr)
+
+    if lm and trie:
+        print('Loading language model from files %s %s' % (lm, trie), 
+                file=sys.stderr)
+        lm_load_start = timer()
+        ds.enableDecoderWithLM(alphabet, lm, trie, LM_WEIGHT,
+                               WORD_COUNT_WEIGHT, VALID_WORD_COUNT_WEIGHT)
+        lm_load_end = timer() - lm_load_start
+        print('Loaded language model in %0.3fs.' % (lm_load_end), 
+              file=sys.stderr)
+    
+    fpath = "/home/dalonlobo/deepspeech_models/deepspeech/ASR/youtube-dl-videos/"
+    folders = []
+    for root, dirs, files in os.walk(fpath):
+        folders.append(root)
+    for folder in folders[1:]:
+        main(folder, ds)
     
