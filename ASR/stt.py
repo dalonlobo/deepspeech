@@ -18,7 +18,6 @@ import pandas as pd
 import scipy.io.wavfile as wav
 import requests
 import json
-import text
 import pickle
 import re
 import time
@@ -35,6 +34,7 @@ def convert_mp4_to_audio(fpath_in, fpath_out):
     return cmd
 
 def execute_cmd_on_system(command):
+    print("Executing : " + command[:30])
     p = subprocess.Popen(command, bufsize=2048, shell=True, 
                          stdin=subprocess.PIPE, 
                          stdout=subprocess.PIPE, 
@@ -75,6 +75,7 @@ def main(fpath, ds):
             print(str(e))
                 
         if not os.path.exists(tmp_dir):
+            print("Creating the directory: ", fpath)
             os.makedirs(tmp_dir)
             
         # Path to wav file
@@ -94,7 +95,7 @@ def main(fpath, ds):
         audioSegment = AudioSegment.from_wav(output_wav_path)
         
         # Insert the WER into a dataframe 
-        wer_df = pd.DataFrame()
+        wer_df = pd.DataFrame(pd.np.empty((0, 3)))
         
         for subtitle in subtitles:
             start_in_ms = (subtitle.start.hours * 60 * 60 * 1000) +\
@@ -139,12 +140,6 @@ def main(fpath, ds):
                     file=sys.stderr)
             
             reference = process_srt_text(subtitle.text)
-            
-            try:
-                wer_of_deepspeech = text.wer(reference, deepspeech_stt)
-            except ZeroDivisionError as e:
-                print(str(e))
-                wer_of_deepspeech = 1.0
             
             # liv.ai model
             # Long audio
@@ -201,18 +196,9 @@ def main(fpath, ds):
                 liv_response_text = str(res3\
                                         .json()["transcriptions"][0]["utf_text"]\
                                         .encode('utf-8'))
-                try:
-                    wer_of_livai = text.wer(reference, liv_response_text)
-                except ZeroDivisionError as e:
-                    print(str(e))
-                    wer_of_livai = 1.0
-            print("Deepspeech WER vs Livai WER")
-            print(wer_of_deepspeech, wer_of_livai)
             
             # Insert the data into the dataframe
-            wer_df = wer_df.append([[wer_of_deepspeech, 
-                                     wer_of_livai,
-                                     reference,
+            wer_df = wer_df.append([[reference,
                                      deepspeech_stt,
                                      liv_response_text]], ignore_index=True)
     except KeyboardInterrupt as e:
@@ -220,11 +206,14 @@ def main(fpath, ds):
     except Exception as e:
         print(str(e), file=sys.stderr)
     finally:
-        print("Writing output dataframe to:", os.path.join(fpath,"output_df.b"))
-        with open(os.path.join(fpath,"output_df.b"), "wb") as f:
-            wer_df.columns = ["Deepspeech WER", "Livai WER", "Reference",
-                              "Deepspeech hypothesis", "Livai hypothesis"]
-            pickle.dump(wer_df, f)
+        
+        try:
+            print("Writing output dataframe to:", os.path.join(fpath,"output_df.b"))
+            with open(os.path.join(fpath,"output_df.b"), "wb") as f:
+                wer_df.columns = ["Reference",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          "Deepspeech hypothesis", "Livai hypothesis"]
+                pickle.dump(wer_df, f)
+        except Exception as e:
+            print(str(e), file=sys.stderr)
             
         # Clean up temporary directory
         try:
@@ -232,7 +221,10 @@ def main(fpath, ds):
             shutil.rmtree(tmp_dir)
         except OSError as e:
             print(str(e), file=sys.stderr)
-        
+            
+        print("Done processing: ", fpath)
+        print("-" * 30)
+        return wer_df
         
 if __name__ == "__main__":
 #    fpath = "/home/dalonlobo/deepspeech_models/deepspeech/ASR/youtube-dl-videos/DWtnKRL30jo/"
@@ -297,6 +289,11 @@ if __name__ == "__main__":
     folders = []
     for root, dirs, files in os.walk(fpath):
         folders.append(root)
-    for folder in folders[1:]:
-        main(folder, ds)
+        
+    start_time = timer()
+    for index, folder in enumerate(folders[1:]):
+        print(folder)
+        op = main(folder, ds)
+    total_time = timer() - start_time
+    print('Program ran in %0.3f minutes.' % (total_time / 60), file=sys.stderr)
     

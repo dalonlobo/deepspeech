@@ -34,11 +34,16 @@ def main():
     print("Distribution:")
     print(df.describe())
     
-    df.hist()
-    
     print("Number of worst case predictions:")
     print("For Deepspeech", df[df["Deepspeech WER"] == 1].count()[0])
     print("For Livai", df[df["Livai WER"] == 1].count()[0])
+    
+    sns.distplot(df["Deepspeech WER"], label="Deepspeech")
+    sns.distplot(df["Livai WER"], label="Livai")
+    plt.legend()
+    plt.show()
+    
+    print(df.mean())
     
 if __name__ == "__main__":
     main()
