@@ -1,12 +1,11 @@
 from __future__ import print_function
 import youtube_dl
 import os
-import subprocess
-import sys
 import json
 import codecs
 import pickle
 import pandas as pd
+import sys
 
 ROOT_DIR_PATH = ''
 
@@ -372,7 +371,7 @@ def main(youtube_link):
 	 if allvideolinks == None:
 	 	return
 
-	 playlistid = 'youtube-dl-videos'
+	 playlistid = sys.argv[2]
 
 	 #if playlistid != '':
 	 createDirectories(playlistid, allvideoids)
@@ -386,15 +385,15 @@ def main(youtube_link):
 if __name__ == '__main__':
 
 	
-#	print("Arguments are : ", str(sys.argv))
-#	# V for video IDs, 'vi' for video id and information 
-#	#dumpPlaylistorChannelInfo(sys.argv[1], 'vi')   #'v' for dumping only video ids 
-#	main(sys.argv[1])	
+	print("Arguments are : ", str(sys.argv))
+	# V for video IDs, 'vi' for video id and information 
+	#dumpPlaylistorChannelInfo(sys.argv[1], 'vi')   #'v' for dumping only video ids 
+	main(sys.argv[1])	
     
-    df = pd.read_table('videos_for_benchmark.txt', header=None)
-    for index, playlistid in df.iterrows():
-        print("Reading this playlist id: ", playlistid[0])
-        main(playlistid[0])
+#    df = pd.read_table('videos_for_benchmark.txt', header=None)
+#    for index, playlistid in df.iterrows():
+#        print("Reading this playlist id: ", playlistid[0])
+#        main(playlistid[0])
 	#playlistid = 'tcsdigital'
 	#videoids = ['mM98zGIkr8Q','gQahEqw99fo','tfYx5ec_tTg','16BfEjrNzr4','yDOy5UewRZM','HsLSP8F4DqU','3PjwojBtLm8','ntn0O9BCNQI','BpgnnS7mKKU','r43LhSUUGTQ']
 

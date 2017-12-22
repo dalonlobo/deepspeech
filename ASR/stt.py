@@ -7,55 +7,30 @@ Created on Thu Dec 21 09:41:10 2017
 """
 from __future__ import absolute_import, division, print_function
 
-import subprocess
-import sys
 import os
-import os.path as ospath
 import shutil
 import glob
 import pysrt
 import pandas as pd
 import scipy.io.wavfile as wav
-import requests
 import pickle
-import re
-import time
+import logging
+import argparse
 
 from timeit import default_timer as timer
-from deepspeech.model import Model
 from pydub import AudioSegment
-
-def convert_mp4_to_audio(fpath_in, fpath_out):
-    """Convert to wav format with 1 channel and 16Khz freq"""
-    cmd = "ffmpeg -i '" + fpath_in + "' -ar 16000 -ac 1 '" + fpath_out + "'"
-    return cmd
-
-def execute_cmd_on_system(command):
-    print("Executing : " + command[:30])
-    p = subprocess.Popen(command, bufsize=2048, shell=True, 
-                         stdin=subprocess.PIPE, 
-                         stdout=subprocess.PIPE, 
-                         stderr=subprocess.PIPE,
-                         close_fds=(sys.platform != 'win32'))
-    output = p.communicate()
-    print("Executed : " + command)
+from ds_stt import DS
+from livai_stt import LIVAI
+from utils import convert_mp4_to_audio, \
+                    execute_cmd_on_system, \
+                        pre_process_srt, \
+                            convert_to_ms
    
-def process_srt_text(text):
-    # Remove the contents before :
-    text = re.sub(r'.*:', '', text)
-    # Remove contents inside the paranthesis
-    text = re.sub(r"\([^)]*\)", '' , text)
-    # Remove special characters
-    text = re.sub('[^A-Za-z0-9\s\']+', '', text)
-    return text.lower()
-    
 def main(fpath, ds):
-    
+
     # Buffer size for audio segments in milliseconds
     buffer_in_ms = 200
     
-#    Read the videos from the folder
-#    for root, subdirs, files in os.walk(walk_dir):
     try:
         # Path to the mp4 file
         mp4_fpath = glob.glob(fpath + "/*.mp4")[0]
@@ -69,228 +44,124 @@ def main(fpath, ds):
             # Clearing the contents of the directory
             shutil.rmtree(tmp_dir)
         except OSError as e:
-            print(str(e))
+            pass
                 
         if not os.path.exists(tmp_dir):
-            print("Creating the directory: ", fpath)
+            logging.debug("Creating the directory: " + fpath)
             os.makedirs(tmp_dir)
             
         # Path to wav file
-        output_wav_path = ospath.join(tmp_dir, "output.wav")
-        
-    #    # Path to mp3 file
-    #    output_mp3_path = ospath.join(ospath.split(ospath.abspath(fpath))[0],\
-    #                                  "tmp", "output.mp3")
+        output_wav_path = os.path.join(tmp_dir, "output.wav")
         
         execute_cmd_on_system(\
                 convert_mp4_to_audio(mp4_fpath, output_wav_path))
         
-        print("Extracting: ", srt_fpath)
-        subtitles = pysrt.open(srt_fpath)
-        
+        logging.debug("Extracting: " + srt_fpath)
         
         audioSegment = AudioSegment.from_wav(output_wav_path)
         
-        # Insert the WER into a dataframe 
-        wer_df = pd.DataFrame(pd.np.empty((0, 3)))
-        
+        # Read the srt
+        subtitles = pysrt.open(srt_fpath)  
+        session_id_list = []
+        ref_text_list = []
+        ds_stt_list = []
+        # liv.ai model
+        la = LIVAI()
         for subtitle in subtitles:
-            start_in_ms = (subtitle.start.hours * 60 * 60 * 1000) +\
-                            (subtitle.start.minutes * 60 * 1000) +\
-                              (subtitle.start.seconds * 1000) +\
-                                (subtitle.start.milliseconds)
-                                
-            end_in_ms = (subtitle.end.hours * 60 * 60 * 1000) +\
-                            (subtitle.end.minutes * 60 * 1000) +\
-                              (subtitle.end.seconds * 1000) +\
-                                (subtitle.end.milliseconds)
+            start_in_ms = convert_to_ms(subtitle.start)                                
+            end_in_ms = convert_to_ms(subtitle.end) 
             
             # pydub segments are in milliseconds
             seg = audioSegment[start_in_ms + buffer_in_ms:end_in_ms + buffer_in_ms]
+            
+            seg_wav_file_name = os.path.join(tmp_dir, "audio_{}_{}.wav".format(
+                    str(start_in_ms), str(end_in_ms)))            
+            seg_mp3_file_name = os.path.join(tmp_dir, "audio_{}_{}.mp3".format(
+                    str(start_in_ms), str(end_in_ms)))
             # Export as wav for deepspeech recognition
-            seg.export(ospath.join(tmp_dir, "audio_{}_{}.wav".format(
-                    str(start_in_ms), str(end_in_ms))), format="wav")
-        
+            seg.export(seg_wav_file_name, format="wav")        
             # Export as mp3 for liv.ai recognition
-            seg.export(ospath.join(tmp_dir, "audio_{}_{}.mp3".format(
-                    str(start_in_ms), str(end_in_ms))), format="mp3")
+            seg.export(seg_mp3_file_name, format="mp3")
             
-            seg_wav_file_name = ospath.join(tmp_dir, "audio_{}_{}.wav".format(
-                    str(start_in_ms), str(end_in_ms)))
-            
-            seg_mp3_file_name = ospath.join(tmp_dir, "audio_{}_{}.mp3".format(
-                    str(start_in_ms), str(end_in_ms)))
-    #        print(seg_file_name)
-            
-            # Deepspeech model
+            # Deepspeech model processing
             fs, audio = wav.read(seg_wav_file_name)
             # We can assume 16kHz
-            audio_length = len(audio) * ( 1 / 16000)
-        
-            print('Running inference.', file=sys.stderr)
+            audio_length = len(audio) * ( 1 / 16000)        
+            logging.info('Running inference.')
             inference_start = timer()
-            deepspeech_stt = ds.stt(audio, fs)
-#            print(deepspeech_stt)
+            ds_stt_list.append(ds.stt(audio, fs))
             inference_end = timer() - inference_start
-            print('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, 
-                                                                    audio_length), 
-                    file=sys.stderr)
+            logging.info('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, 
+                                                                    audio_length))
             
-            reference = process_srt_text(subtitle.text)
+            session_id_list.append(la.upload(seg_mp3_file_name))
             
-            # liv.ai model
-            # Long audio
-            headers = {'Authorization' : 'Token ' + TOKEN}
-            data = {'user' : '14038' ,'language' : 'EN','transcribe' : 1}
-            files = {'audio_file' : open(seg_mp3_file_name,'rb')}
-            url = 'https://dev.liv.ai/liv_speech_api/recordings/'
-            res1 = requests.post(url, headers = headers, data = data, files = files)
-            session_id = res1.json()['app_session_id']
-    #        print(json.dumps(res1.json(), indent=4, sort_keys=True))
-            
-            # Check the status
-            
-            headers = {'Authorization' : 'Token ' + TOKEN}
-            params = {'app_session_id' : session_id}
-            url = 'https://dev.liv.ai/liv_speech_api/session/status/'
-            liv_trans_status = requests.get(url, headers = headers, params = params)
-    #        print(json.dumps(res2.json(), indent=4, sort_keys=True))
-            
-            liv_status = liv_trans_status.json()["upload_status"]
-            while liv_status in ["0","10", "11", "20"]:
-                time.sleep(5) # Liv ai is rate limited 1call per second
-                # Check the status
-            
-                headers = {'Authorization' : 'Token ' + TOKEN}
-                params = {'app_session_id' : session_id}
-                url = 'https://dev.liv.ai/liv_speech_api/session/status/'
-                liv_trans_status = requests.get(url, headers = headers, params = params)
-        #        print(json.dumps(res2.json(), indent=4, sort_keys=True))
-                
-                liv_status = liv_trans_status.json()["upload_status"]
-                
-            if str(liv_status) < 0:
-                print("Something went wrong in livai")
-                print("Check: https://liv.ai/api/long_audio/#get-session-status")
-            else:
-                
-                # Wait until the audio is processed
-                while not liv_trans_status.json()["transcribed_status"]:
-                    time.sleep(5)  # Respect the rate limit
-                    headers = {'Authorization' : 'Token ' + TOKEN}
-                    params = {'app_session_id' : session_id}
-                    url = 'https://dev.liv.ai/liv_speech_api/session/status/'
-                    liv_trans_status = requests.get(url, headers = headers, params = params)
 
-                # Proceed only if the transription is available
-
-                # Get the transcription
-                headers = {'Authorization' : 'Token ' + TOKEN}
-                params = {'app_session_id' : session_id}
-                url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
-                res3 = requests.get(url, headers = headers, params = params)
-#                print(json.dumps(res3.json(), indent=4, sort_keys=True))
-                liv_response_text = str(res3\
-                                        .json()["transcriptions"][0]["utf_text"]\
-                                        .encode('utf-8'))
             
-            # Insert the data into the dataframe
-            wer_df = wer_df.append([[reference,
-                                     deepspeech_stt,
-                                     liv_response_text]], ignore_index=True)
+            # Process the text to remove (), :, etc
+            ref_text_list.append(pre_process_srt(subtitle.text))
+        logging.debug("Running liv ai on the data")
+        la_stt_list = la.get_stt(session_id_list)
+        logging.debug("Liv ai process complete")
+        # Insert the data into the dataframe
+        op_df = pd.DataFrame([[ref_text_list, ds_stt_list, la_stt_list]], 
+                             columns=["Reference", "Deepspeech hypothesis", 
+                                      "Livai hypothesis"])
     except KeyboardInterrupt as e:
-        print("You have exited the program!", file=sys.stderr)
+        logging.error("You have exited the program!")
     except Exception as e:
-        print(str(e), file=sys.stderr)
+        logging.error(str(e))
     finally:
-        
         try:
-            print("Writing output dataframe to:", os.path.join(fpath,"output_df.b"))
+            logging.info("Writing output dataframe to:" + os.path.join(fpath,"output_df.b"))
             with open(os.path.join(fpath,"output_df.b"), "wb") as f:
-                wer_df.columns = ["Reference",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          "Deepspeech hypothesis", "Livai hypothesis"]
-                pickle.dump(wer_df, f)
+                pickle.dump(op_df, f)
         except Exception as e:
-            print(str(e), file=sys.stderr)
-            
-        # Clean up temporary directory
+            logging.error(str(e))
         try:
             # Clearing the contents of the directory
             shutil.rmtree(tmp_dir)
         except OSError as e:
-            print(str(e), file=sys.stderr)
+            pass
             
-        print("Done processing: ", fpath)
-        print("-" * 30)
-        return wer_df
-        
 if __name__ == "__main__":
-#    fpath = "/home/dalonlobo/deepspeech_models/deepspeech/ASR/youtube-dl-videos/DWtnKRL30jo/"
-        
-    MSL = 500 # minimum silence length in ms
+    logging.basicConfig(filename="stt.logs",
+        filemode='a',
+        format='%(asctime)s %(name)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG)
     
-    # These constants control the beam search decoder
-
-    # Beam width used in the CTC decoder when building candidate transcriptions
-    BEAM_WIDTH = 500
-    
-    # The alpha hyperparameter of the CTC decoder. Language Model weight
-    # LM_WEIGHT = 1.75
-    LM_WEIGHT = 1.75
-    
-    # The beta hyperparameter of the CTC decoder. Word insertion weight (penalty)
-    WORD_COUNT_WEIGHT = 1.00
-    
-    # Valid word insertion weight. This is used to lessen the word insertion penalty
-    # when the inserted word is part of the vocabulary
-    VALID_WORD_COUNT_WEIGHT = 1.00
-    
-    
-    # These constants are tied to the shape of the graph used (changing them changes
-    # the geometry of the first layer), so make sure you use the same constants that
-    # were used during training
-    
-    # Number of MFCC features to use
-    N_FEATURES = 26
-    
-    # Size of the context window used for producing timesteps in the input vector
-    N_CONTEXT = 9
-    
-#    Liv.ai authentication token
-    TOKEN = 'f6406f7a3ecba98a61db03be55b408f957728d85' 
-    
-#   Use the following for defaults
-    model = "/home/dalonlobo/deepspeech_models/models/output_graph.pb"
-    alphabet = "/home/dalonlobo/deepspeech_models/models/alphabet.txt"
-    lm = "/home/dalonlobo/deepspeech_models/models/lm.binary"
-    trie = "/home/dalonlobo/deepspeech_models/models/trie"
-    
-    # Loading the deepspeech module
-    print('Loading model from file %s' % (model), file=sys.stderr)
-    model_load_start = timer()
-    ds = Model(model, N_FEATURES, N_CONTEXT, 
-               alphabet, BEAM_WIDTH)
-    model_load_end = timer() - model_load_start
-    print('Loaded model in %0.3fs.' % (model_load_end), file=sys.stderr)
-
-    if lm and trie:
-        print('Loading language model from files %s %s' % (lm, trie), 
-                file=sys.stderr)
-        lm_load_start = timer()
-        ds.enableDecoderWithLM(alphabet, lm, trie, LM_WEIGHT,
-                               WORD_COUNT_WEIGHT, VALID_WORD_COUNT_WEIGHT)
-        lm_load_end = timer() - lm_load_start
-        print('Loaded language model in %0.3fs.' % (lm_load_end), 
-              file=sys.stderr)
-    
-    fpath = "/home/dalonlobo/deepspeech_models/deepspeech/ASR/youtube-dl-videos/"
+    parser = argparse.ArgumentParser(description='Speech to text')
+    parser.add_argument('videospath', type=str,  
+                        help='Path to the model (protocol buffer binary file)')
+    parser.add_argument('--model', type=str,  nargs='?',
+                        default='/home/dalonlobo/deepspeech_models/models/output_graph.pb',
+                        help='Path to the model (protocol buffer binary file)')
+    parser.add_argument('--alphabet', type=str,  nargs='?',
+                        default='/home/dalonlobo/deepspeech_models/models/alphabet.txt',
+                        help='Path to the configuration file specifying the alphabet used by the network')
+    parser.add_argument('--lm', type=str, nargs='?',
+                        default='/home/dalonlobo/deepspeech_models/models/lm.binary',
+                        help='Path to the language model binary file')
+    parser.add_argument('--trie', type=str, nargs='?',
+                        default='/home/dalonlobo/deepspeech_models/models/trie',
+                        help='Path to the language model trie file created with native_client/generate_trie')
+    args = parser.parse_args()
+    logging.info("Program started...")
+    # Initialize deepspeech module
+    DS = DS(args.model, args.alphabet, args.lm, args.trie)
+    # Load the modal
+    ds = DS.load_ds_model()
     folders = []
-    for root, dirs, files in os.walk(fpath):
-        folders.append(root)
-        
+    for root, dirs, files in os.walk(args.videospath):
+        folders.append(root)        
     start_time = timer()
-    for index, folder in enumerate(folders[1:]):
-        print(folder)
-        op = main(folder, ds)
+    for folder in folders[1:]:
+        process_start_time = timer()
+        logging.info("Processing the folder: " + str(folder))
+        main(folder, ds)
+        logging.info('Video %s processed in %0.3f minutes.' \
+                     % (folder, ((timer() - process_start_time) / 60)))
     total_time = timer() - start_time
-    print('Program ran in %0.3f minutes.' % (total_time / 60), file=sys.stderr)
+    logging.info('Entire program ran in %0.3f minutes.' % (total_time / 60))
     
