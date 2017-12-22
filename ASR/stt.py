@@ -17,7 +17,6 @@ import pysrt
 import pandas as pd
 import scipy.io.wavfile as wav
 import requests
-import json
 import pickle
 import re
 import time
@@ -25,8 +24,6 @@ import time
 from timeit import default_timer as timer
 from deepspeech.model import Model
 from pydub import AudioSegment
-from pydub.effects import normalize
-
 
 def convert_mp4_to_audio(fpath_in, fpath_out):
     """Convert to wav format with 1 channel and 16Khz freq"""
