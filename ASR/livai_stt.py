@@ -61,6 +61,7 @@ class LIVAI():
                 while not transcribed_status:
                     time.sleep(1)  # Respect the rate limit
                     upload_status, transcribed_status = self.upload_status(session_id)
+                time.sleep(1)
                 logging.debug("Obtaining the transcription for :" + session_id)
                 # Get the transcription
                 headers = {'Authorization' : 'Token ' + self.TOKEN}

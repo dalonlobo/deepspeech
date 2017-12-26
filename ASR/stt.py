@@ -100,13 +100,19 @@ def main(fpath, ds):
             
             # Process the text to remove (), :, etc
             ref_text_list.append(pre_process_srt(subtitle.text))
+                    
+        with open(os.path.join(fpath,"session_ids.b"), "wb") as f:
+            pickle.dump([ref_text_list, ds_stt_list, session_id_list], f)
         logging.debug("Running liv ai on the data")
         la_stt_list = la.get_stt(session_id_list)
         logging.debug("Liv ai process complete")
         # Insert the data into the dataframe
-        op_df = pd.DataFrame([[ref_text_list, ds_stt_list, la_stt_list]], 
-                             columns=["Reference", "Deepspeech hypothesis", 
-                                      "Livai hypothesis"])
+#        op_df = pd.DataFrame([ref_text_list, ds_stt_list, la_stt_list], 
+#                             columns=["Reference", "Deepspeech hypothesis", 
+#                                      "Livai hypothesis"])
+        op_df = pd.DataFrame({"Reference": ref_text_list,
+                              "Deepspeech hypothesis": ds_stt_list,
+                              "Livai hypothesis": la_stt_list})
     except KeyboardInterrupt as e:
         logging.error("You have exited the program!")
     except Exception as e:
@@ -127,7 +133,7 @@ def main(fpath, ds):
 if __name__ == "__main__":
     logging.basicConfig(filename="stt.logs",
         filemode='a',
-        format='%(asctime)s %(name)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s',
+        format='%(asctime)s [%(name)s:%(levelname)s] [%(filename)s:%(funcName)s] #%(lineno)d: %(message)s',
         datefmt='%H:%M:%S',
         level=logging.DEBUG)
     
@@ -164,4 +170,5 @@ if __name__ == "__main__":
                      % (folder, ((timer() - process_start_time) / 60)))
     total_time = timer() - start_time
     logging.info('Entire program ran in %0.3f minutes.' % (total_time / 60))
+    logging.info("...END...")
     
