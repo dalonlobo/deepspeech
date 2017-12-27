@@ -25,6 +25,7 @@ from utils import convert_mp4_to_audio, \
                     execute_cmd_on_system, \
                         pre_process_srt, \
                             convert_to_ms
+from requests.exceptions import ConnectionError
    
 def main(fpath, ds):
 
@@ -104,7 +105,11 @@ def main(fpath, ds):
         with open(os.path.join(fpath,"session_ids.b"), "wb") as f:
             pickle.dump([ref_text_list, ds_stt_list, session_id_list], f)
         logging.debug("Running liv ai on the data")
-        la_stt_list = la.get_stt(session_id_list)
+        try:
+            la_stt_list = la.get_stt(session_id_list)
+        except ConnectionError as e:
+            logging.error(str(e))
+            logging.error("New connection error")
         logging.debug("Liv ai process complete")
         # Insert the data into the dataframe
 #        op_df = pd.DataFrame([ref_text_list, ds_stt_list, la_stt_list], 
