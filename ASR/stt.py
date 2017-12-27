@@ -94,11 +94,13 @@ def main(fpath, ds):
             inference_end = timer() - inference_start
             logging.info('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, 
                                                                     audio_length))
-            
-            session_id_list.append(la.upload(seg_mp3_file_name))
-            
-
-            
+            try:
+                session_id_list.append(la.upload(seg_mp3_file_name))
+            except ConnectionError as e:
+                session_id_list.append('')
+                logging.error(str(e))
+                logging.error("New connection error")
+                
             # Process the text to remove (), :, etc
             ref_text_list.append(pre_process_srt(subtitle.text))
                     
@@ -108,6 +110,7 @@ def main(fpath, ds):
         try:
             la_stt_list = la.get_stt(session_id_list)
         except ConnectionError as e:
+            la_stt_list = []
             logging.error(str(e))
             logging.error("New connection error")
         logging.debug("Liv ai process complete")

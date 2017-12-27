@@ -46,6 +46,9 @@ class LIVAI():
     def get_stt(self, session_ids):
         liv_stt = []
         for session_id in session_ids:
+            if session_id == '':
+                liv_stt.append('')
+                continue
             upload_status, transcribed_status = self.upload_status(session_id)
             # Following are the upload status
             # https://liv.ai/api/long_audio/#get-session-status
