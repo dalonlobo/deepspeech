@@ -139,7 +139,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Speech to text')
     parser.add_argument('videospath', type=str,  
-                        help='Path to the model (protocol buffer binary file)')
+                        help='Path to the Video files')
     parser.add_argument('--model', type=str,  nargs='?',
                         default='/home/dalonlobo/deepspeech_models/models/output_graph.pb',
                         help='Path to the model (protocol buffer binary file)')
