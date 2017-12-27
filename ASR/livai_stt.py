@@ -12,6 +12,8 @@ import logging
 import requests
 import json
 
+from requests.exceptions import ConnectionError
+
 class LIVAI():
     """
     This class deals with everything related to liv ai
@@ -70,10 +72,17 @@ class LIVAI():
                 headers = {'Authorization' : 'Token ' + self.TOKEN}
                 params = {'app_session_id' : session_id}
                 url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
-                response = requests.get(url, headers = headers, params = params)
-                logging.debug(str(json.dumps(response.json(), indent=4, sort_keys=True)))
-                liv_stt.append(str(response.json()["transcriptions"][0]["utf_text"]\
-                                        .encode('utf-8')))
+                try:
+                    response = requests.get(url, headers = headers, params = params)
+                    logging.debug(str(json.dumps(response.json(), indent=4, sort_keys=True)))
+                    liv_stt.append(str(response.json()["transcriptions"][0]["utf_text"]\
+                                            .encode('utf-8')))
+                except ConnectionError as e:
+                    logging.error(str(e))
+                    logging.error("New connection error")
+                    liv_stt.append('')
+                
+
             time.sleep(1) # Respect rate limit
         return liv_stt
                 
