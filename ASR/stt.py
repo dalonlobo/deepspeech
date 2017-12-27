@@ -16,6 +16,7 @@ import scipy.io.wavfile as wav
 import pickle
 import logging
 import argparse
+import time
 
 from timeit import default_timer as timer
 from pydub import AudioSegment
@@ -95,6 +96,8 @@ def main(fpath, ds):
             logging.info('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, 
                                                                     audio_length))
             try:
+                if inference_end < 1:
+                    time.sleep(1) # To respect rate limit
                 session_id_list.append(la.upload(seg_mp3_file_name))
             except ConnectionError as e:
                 session_id_list.append('')
