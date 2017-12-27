@@ -110,3 +110,7 @@ archive/liv.ai/*.wav
 archive/liv.ai/*.mp3
 archive/liv.ai/*.mp4
 youtube-dl-videos/
+*.logs
+ASR/*.logs
+*_videos/
+ASR/tmp*
