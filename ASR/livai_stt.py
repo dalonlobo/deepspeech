@@ -74,6 +74,7 @@ class LIVAI():
                 logging.debug(str(json.dumps(response.json(), indent=4, sort_keys=True)))
                 liv_stt.append(str(response.json()["transcriptions"][0]["utf_text"]\
                                         .encode('utf-8')))
+            time.sleep(1) # Respect rate limit
         return liv_stt
                 
                 
