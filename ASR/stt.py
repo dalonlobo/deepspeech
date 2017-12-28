@@ -115,7 +115,6 @@ def main(fpath, ds):
             logging.debug(session_id_list)
             la_stt_list = la.get_stt(session_id_list)
         except ConnectionError as e:
-            la_stt_list = []
             logging.error(str(e))
             logging.error("New connection error")
         logging.debug("Liv ai process complete")
