@@ -37,7 +37,7 @@ if __name__ == "__main__":
             for line in f:
                 # # Remove the digits
                 line = re.sub('[^A-Za-z\s\']+', '', line)
-                f.write(line + "\n")
+                op.write(line + "\n")
 
             
             
