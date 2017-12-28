@@ -36,12 +36,12 @@ if __name__ == "__main__":
         logging.debug("Reading file: " + fpath)
         with open(fpath, "r") as f:
             for line in f:
-                if line.isalpha():
-                    tokens.extend(word_tokenize(line))
+                tokens.extend(word_tokenize(line))
     
     with open(op_path, "w+") as f:
         for word in set(tokens):
-            f.write(word + "\n")
+            if word.isalpha():
+                f.write(word + "\n")
             
             
             
