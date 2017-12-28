@@ -111,6 +111,8 @@ def main(fpath, ds):
             pickle.dump([ref_text_list, ds_stt_list, session_id_list], f)
         logging.debug("Running liv ai on the data")
         try:
+            logging.debug("Session id list:")
+            logging.debug(session_id_list)
             la_stt_list = la.get_stt(session_id_list)
         except ConnectionError as e:
             la_stt_list = []
@@ -121,6 +123,10 @@ def main(fpath, ds):
 #        op_df = pd.DataFrame([ref_text_list, ds_stt_list, la_stt_list], 
 #                             columns=["Reference", "Deepspeech hypothesis", 
 #                                      "Livai hypothesis"])
+        logging.debug("All the lists: ")
+        logging.debug(ref_text_list)
+        logging.debug(ds_stt_list)
+        logging.debug(la_stt_list)
         op_df = pd.DataFrame({"Reference": ref_text_list,
                               "Deepspeech hypothesis": ds_stt_list,
                               "Livai hypothesis": la_stt_list})
