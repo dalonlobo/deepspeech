@@ -36,7 +36,7 @@ def pre_process_srt(text):
     # Remove contents inside the paranthesis
     text = re.sub(r"\([^)]*\)", '' , text)
     # Remove special characters
-    text = re.sub('[^A-Za-z0-9\s\']+', '', text)
+    text = re.sub('[^A-Za-z0-9\s\']+', ' ', text)
     return text.lower()
 
 def convert_to_ms(st):

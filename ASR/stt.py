@@ -118,10 +118,7 @@ def main(fpath, ds):
             logging.error(str(e))
             logging.error("New connection error")
         logging.debug("Liv ai process complete")
-        # Insert the data into the dataframe
-#        op_df = pd.DataFrame([ref_text_list, ds_stt_list, la_stt_list], 
-#                             columns=["Reference", "Deepspeech hypothesis", 
-#                                      "Livai hypothesis"])
+
         logging.debug("All the lists: ")
         logging.debug(ref_text_list)
         logging.debug(ds_stt_list)

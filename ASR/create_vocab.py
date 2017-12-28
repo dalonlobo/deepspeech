@@ -11,8 +11,7 @@ import logging
 import glob
 import os
 import argparse
-
-from nltk import word_tokenize
+import re
 
 if __name__ == "__main__":
     logging.basicConfig(filename="create_vocab.logs",
@@ -34,14 +33,12 @@ if __name__ == "__main__":
     for fpath in glob.glob(folder + os.sep + "*.txt"):
         print(fpath)
         logging.debug("Reading file: " + fpath)
-        with open(fpath, "r") as f:
+        with open(fpath, "r") as f, open(op_path, "w+") as op:
             for line in f:
-                tokens.extend(word_tokenize(line))
-    
-    with open(op_path, "w+") as f:
-        for word in set(tokens):
-            if word.isalpha():
-                f.write(word + "\n")
+                # # Remove the digits
+                line = re.sub('[^A-Za-z\s\']+', '', line)
+                f.write(line + "\n")
+
             
             
             
