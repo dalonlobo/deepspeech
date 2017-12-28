@@ -25,7 +25,7 @@ def process_srt(folder):
     logging.info("Writing to: " + op_path)
     with open(op_path, "w+") as f:
         for subtitle in subtitles:
-            f.write(pre_process_srt(subtitle.text) + " ")
+            f.write(pre_process_srt(subtitle.text) + "\n")
     logging.info("Finished writing")
     
 if __name__ == "__main__":
