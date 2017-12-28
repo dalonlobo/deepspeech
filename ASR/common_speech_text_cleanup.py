@@ -38,4 +38,4 @@ if __name__ == "__main__":
         df = pd.read_csv(fpath)
         with open(os.path.join(op_path, os.path.basename(fpath) + ".txt"), "w+") as f:
             for trans in df.transcript:
-                f.write(trans + " ")
+                f.write(str(trans) + " ")
