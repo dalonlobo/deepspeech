@@ -63,7 +63,8 @@ def main(fpath, ds):
         subtitles = pysrt.open(srt_fpath)  
         ref_text_list = []
         ds_stt_list = []
-        for subtitle in subtitles:
+        for index, subtitle in enumerate(subtitles):
+            logging.info('Running {} segment'.format(index))
             start_in_ms = convert_to_ms(subtitle.start)                                
             end_in_ms = convert_to_ms(subtitle.end) 
             
