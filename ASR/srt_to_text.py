@@ -51,6 +51,6 @@ if __name__ == "__main__":
         process_start_time = timer()
         logging.info("Processing the folder: " + str(folder))
         process_srt(folder)
-    if not folders:
-        process_srt(args.srtpath)
+    if len(folders) == 1:
+        process_srt(folders[0])
     logging.info("----Done----")
