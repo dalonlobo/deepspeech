@@ -18,15 +18,16 @@ from utils import pre_process_srt
 
 def process_srt(folder):
     print(folder)
-    srt_fpath = glob.glob(folder + "/*.srt")[0]
-    # Read the srt
-    subtitles = pysrt.open(srt_fpath)
-    op_path = srt_fpath.split("/")[-1] + ".txt"
-    logging.info("Writing to: " + op_path)
-    with open(op_path, "w+") as f:
-        for subtitle in subtitles:
-            f.write(pre_process_srt(subtitle.text) + "\n")
-    logging.info("Finished writing")
+    #srt_fpath = glob.glob(folder + "/*.srt")[0]
+    for srt_fpath in glob.glob(folder + "/*.srt"):
+        # Read the srt
+        subtitles = pysrt.open(srt_fpath)
+        op_path = srt_fpath.split("/")[-1] + ".txt"
+        logging.info("Writing to: " + op_path)
+        with open(op_path, "w+") as f:
+            for subtitle in subtitles:
+                f.write(pre_process_srt(subtitle.text) + "\n")
+        logging.info("Finished writing")
     
 if __name__ == "__main__":
     logging.basicConfig(filename="srt_to_text.logs",
@@ -44,10 +45,12 @@ if __name__ == "__main__":
 
     folders = []
     for root, dirs, files in os.walk(args.srtpath):
-        folders.append(root)        
+        folders.append(root)    
     start_time = timer()
     for folder in folders[1:]:
         process_start_time = timer()
         logging.info("Processing the folder: " + str(folder))
         process_srt(folder)
+    if not folders:
+        process_srt(args.srtpath)
     logging.info("----Done----")
