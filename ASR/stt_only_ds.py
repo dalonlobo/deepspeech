@@ -16,17 +16,14 @@ import scipy.io.wavfile as wav
 import pickle
 import logging
 import argparse
-import time
 
 from timeit import default_timer as timer
 from pydub import AudioSegment
 from ds_stt import DS
-from livai_stt import LIVAI
 from utils import convert_mp4_to_audio, \
                     execute_cmd_on_system, \
                         pre_process_srt, \
                             convert_to_ms
-from requests.exceptions import ConnectionError
    
 def main(fpath, ds):
 
@@ -64,12 +61,8 @@ def main(fpath, ds):
         
         # Read the srt
         subtitles = pysrt.open(srt_fpath)  
-        session_id_list = []
         ref_text_list = []
         ds_stt_list = []
-        la_stt_list = []
-        # liv.ai model
-        la = LIVAI()
         for subtitle in subtitles:
             start_in_ms = convert_to_ms(subtitle.start)                                
             end_in_ms = convert_to_ms(subtitle.end) 
@@ -96,37 +89,18 @@ def main(fpath, ds):
             inference_end = timer() - inference_start
             logging.info('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, 
                                                                     audio_length))
-            try:
-                if inference_end < 1:
-                    time.sleep(1) # To respect rate limit
-                session_id_list.append(la.upload(seg_mp3_file_name))
-            except ConnectionError as e:
-                session_id_list.append('')
-                logging.error(str(e))
-                logging.error("New connection error")
                 
             # Process the text to remove (), :, etc
             ref_text_list.append(pre_process_srt(subtitle.text))
                     
-        with open(os.path.join(fpath,"session_ids.b"), "wb") as f:
-            pickle.dump([ref_text_list, ds_stt_list, session_id_list], f)
-        logging.debug("Running liv ai on the data")
-        try:
-            logging.debug("Session id list:")
-            logging.debug(session_id_list)
-            la_stt_list = la.get_stt(session_id_list)
-        except ConnectionError as e:
-            logging.error(str(e))
-            logging.error("New connection error")
-        logging.debug("Liv ai process complete")
+        with open(os.path.join(fpath,"text_list.b"), "wb") as f:
+            pickle.dump([ref_text_list, ds_stt_list], f)
 
         logging.debug("All the lists: ")
         logging.debug(ref_text_list)
         logging.debug(ds_stt_list)
-        logging.debug(la_stt_list)
         op_df = pd.DataFrame({"Reference": ref_text_list,
-                              "Deepspeech hypothesis": ds_stt_list,
-                              "Livai hypothesis": la_stt_list})
+                              "Deepspeech hypothesis": ds_stt_list})
     except KeyboardInterrupt as e:
         logging.error("You have exited the program!")
     except Exception as e:
@@ -145,7 +119,7 @@ def main(fpath, ds):
             pass
             
 if __name__ == "__main__":
-    logging.basicConfig(filename="stt.logs",
+    logging.basicConfig(filename="stt_only_ds.logs",
         filemode='a',
         format='%(asctime)s [%(name)s:%(levelname)s] [%(filename)s:%(funcName)s] #%(lineno)d: %(message)s',
         datefmt='%H:%M:%S',
@@ -154,17 +128,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Speech to text')
     parser.add_argument('videospath', type=str,  
                         help='Path to the Video files')
-    parser.add_argument('--model', type=str,  nargs='?',
-                        default='/home/dalonlobo/deepspeech_models/models/output_graph.pb',
+    parser.add_argument('--model', type=str,
                         help='Path to the model (protocol buffer binary file)')
-    parser.add_argument('--alphabet', type=str,  nargs='?',
-                        default='/home/dalonlobo/deepspeech_models/models/alphabet.txt',
+    parser.add_argument('--alphabet', type=str,
                         help='Path to the configuration file specifying the alphabet used by the network')
-    parser.add_argument('--lm', type=str, nargs='?',
-                        default='/home/dalonlobo/deepspeech_models/models/lm.binary',
+    parser.add_argument('--lm', type=str, 
                         help='Path to the language model binary file')
-    parser.add_argument('--trie', type=str, nargs='?',
-                        default='/home/dalonlobo/deepspeech_models/models/trie',
+    parser.add_argument('--trie', type=str, 
                         help='Path to the language model trie file created with native_client/generate_trie')
     args = parser.parse_args()
     logging.info("Program started...")
