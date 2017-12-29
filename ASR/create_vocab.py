@@ -33,11 +33,11 @@ if __name__ == "__main__":
     for fpath in glob.glob(folder + os.sep + "*.txt"):
         print(fpath)
         logging.debug("Reading file: " + fpath)
-        with open(fpath, "r") as f, open(op_path, "w+") as op:
+        with open(fpath, "r") as f, open(op_path, "a") as op:
             for line in f:
                 # # Remove the digits
                 line = re.sub('[^A-Za-z\s\']+', '', line)
-                op.write(line + "\n")
+                op.write(line)
 
             
             
