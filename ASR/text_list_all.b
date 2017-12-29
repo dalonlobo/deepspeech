@@ -145,76 +145,69 @@ aS"we don't have to fight them everybody thinks we have to fight no we have the 
 p73
 ag39
 aa(lp74
-Vfb0bd339-dde9-413b-bdf5-85267eb612d5
+S'one'
 p75
-aVfd1c8c21-16ff-4ee3-8359-b7952807dd4c
+ag39
+ag39
+aS"i don't get to see anything except bit of news and around work"
 p76
-aV0351a5f7-b049-4363-9819-0eedb9eeb217
+aS'lagta hai'
 p77
-aV84756c97-6d54-425a-98bb-82f599e7dd03
+aS'i never get to brass or see anything i was asking what are people looking for what is it'
 p78
-aV3ca21d8d-3842-4608-aa7d-8a64c3bc873e
+aS"and he is saying it like some matter of fact he's saying seventy percent is only port"
 p79
-aVfdd06e10-0cb2-4f0c-8990-d4e45941c67c
+aS'saint'
 p80
-aV07dd9730-afe2-44bb-a128-933cefb47e67
+aS"of the internet traffic is pornography i don't know if this percentage is correct but if you anywhere near that"
 p81
-aV0403d50a-8952-47d5-b377-1c4592da4684
+ag39
+aS"when such a powerful medium that we can communicate with the entire world don't we have anything better to say"
 p82
-aV979d3439-15ea-4f3e-a66a-c439fd5b954b
+aS'i m not trying to be model stake and say this is wrong the'
 p83
-aV36eeea11-69aa-4c9c-af9f-c635fc0bb1e7
+aS'it is wrong but i am saying for the first time'
 p84
-aV660bbf3b-6485-45ec-90bf-38e6216d0dae
+aS'in the history humanity we have this'
 p85
-aVfba9c150-eff3-44eb-9dbf-021e00bdab20
+aS'that we can'
 p86
-aV8ad3c888-29e6-4496-a1e3-67af3008448e
+aS'say something to the entire world in one shot'
 p87
-aV1233487c-95a3-455a-b4d0-b1ffdf14aa24
+aS'never before this was even a match in a'
 p88
-aVa174c85c-482a-4490-b0a2-d7852b3368f1
+ag39
+aS"grams and what's apes and twiters and emails don't take it for granted this is the first time"
 p89
-aVc6183bed-2566-400a-9256-fc44c8f91a01
+aS'that we can come and get'
 p90
-aV3757d26a-fdcb-417e-b4ed-aee14700294b
+aS'to every human being on the planet'
 p91
-aV10c735a7-961a-40d6-afe1-d82527ceda4d
+aS'is it not important the highest possibility get to that'
 p92
-aV29712fa7-e940-4f97-9caf-d947081234ed
+aS'today i'
 p93
-aVd9a8e07d-835e-4018-bdd0-550988d581a6
+ag39
+aS'biggest industries on the planet or the first number one industries arms and armaments'
 p94
-aV48c98baa-1be6-48b1-91d6-ab80f030235f
+aS'number two is of car hall on to back off'
 p95
-aV7ce8c5a0-32d6-41a0-90c4-073de6eac50c
+aS'number three is'
 p96
-aV0d159e2c-7240-4ba5-af99-0ea55444e11b
+aS'this is everything about us what kind of people we are'
 p97
-aV10cb64de-7c62-4187-b529-ed9b37f5858e
+aS'on the internet is four'
 p98
-aVc336bda3-ed9c-4aff-afdd-4c614e3e3bd5
+aS'we as a generation should not let this opportunity pus we should not let this'
 p99
-aVddb95f68-240e-4104-b594-58539b7adae8
+aS'six'
 p100
-aVcb4e9b97-dadb-4a4e-824b-8a52d2afd318
+ag39
+aS'how can we allow people who sell children to do dirty things with them to dominate this pla'
 p101
-aVf370ba01-fa45-4c7a-9b1b-9ff543c886fe
+aS'tell me we are leaving them to do it'
 p102
-aVf799e8b7-cb0a-4812-bf88-f03bf4c81da7
+aS"we don't have two five time everybody thinks we have to fight no we have to our well on them with positive things"
 p103
-aV82f22abd-28b6-4812-bc1f-dee75b2fb2b0
-p104
-aV03c9a0b3-0ced-4654-8840-19741f8d059d
-p105
-aV4b811700-38d5-4b73-950b-68adcc3814de
-p106
-aV7ddfe267-1e93-40b8-8131-6371c11d866b
-p107
-aVe96856c4-d436-4c45-8df6-4e81dd86e49f
-p108
-aVe7534e13-50db-491a-9ebe-18a1eb833657
-p109
-aVfabda7ed-ed61-40dd-bbe9-64be4e663b48
-p110
+ag39
 aa.
