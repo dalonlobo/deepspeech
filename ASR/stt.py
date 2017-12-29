@@ -108,8 +108,9 @@ def main(fpath, ds):
             # Process the text to remove (), :, etc
             ref_text_list.append(pre_process_srt(subtitle.text))
                     
-        with open(os.path.join(fpath,"text_list_all.b"), "wb") as f:
-            pickle.dump([ref_text_list, ds_stt_list, session_id_list], f)
+        with open(os.path.join(fpath,"session_list.b"), "wb") as f:
+            logging.debug("Writing session list to binary")
+            pickle.dump([session_id_list], f)
         logging.debug("Running liv ai on the data")
         try:
             logging.debug("Session id list:")
@@ -124,6 +125,9 @@ def main(fpath, ds):
         logging.debug(ref_text_list)
         logging.debug(ds_stt_list)
         logging.debug(la_stt_list)
+        with open(os.path.join(fpath,"text_list_all.b"), "wb") as f:
+            pickle.dump([ref_text_list, ds_stt_list, la_stt_list], f)
+        
         op_df = pd.DataFrame({"Reference": ref_text_list,
                               "Deepspeech hypothesis": ds_stt_list,
                               "Livai hypothesis": la_stt_list})

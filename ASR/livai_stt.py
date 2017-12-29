@@ -48,40 +48,43 @@ class LIVAI():
     def get_stt(self, session_ids):
         liv_stt = []
         for session_id in session_ids:
-            if session_id == '':
-                liv_stt.append('')
-                continue
-            upload_status, transcribed_status = self.upload_status(session_id)
-            # Following are the upload status
-            # https://liv.ai/api/long_audio/#get-session-status
-            while upload_status in ["0","10", "11", "20"]:
-                time.sleep(1) # Liv ai is rate limited 1call per second
-                upload_status, transcribed_status = self.upload_status(session_id)      
-            
-            if int(upload_status) < 0:
-                logging.error("Something went wrong in livai, session id & status: ",\
-                              session_id, upload_status)
-            else:            
-                # Wait until the audio is processed
-                while not transcribed_status:
-                    time.sleep(1)  # Respect the rate limit
-                    upload_status, transcribed_status = self.upload_status(session_id)
-                time.sleep(1)
-                logging.debug("Obtaining the transcription for :" + session_id)
-                # Get the transcription
-                headers = {'Authorization' : 'Token ' + self.TOKEN}
-                params = {'app_session_id' : session_id}
-                url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
-                try:
-                    response = requests.get(url, headers = headers, params = params)
-                    logging.debug(str(json.dumps(response.json(), indent=4, sort_keys=True)))
-                    liv_stt.append(str(response.json()["transcriptions"][0]["utf_text"]\
-                                            .encode('utf-8')))
-                except ConnectionError as e:
-                    logging.error(str(e))
-                    logging.error("New connection error")
+            try:
+                if session_id == '':
                     liv_stt.append('')
+                    continue
+                upload_status, transcribed_status = self.upload_status(session_id)
+                # Following are the upload status
+                # https://liv.ai/api/long_audio/#get-session-status
+                while upload_status in ["0","10", "11", "20"]:
+                    time.sleep(1) # Liv ai is rate limited 1call per second
+                    upload_status, transcribed_status = self.upload_status(session_id)      
                 
+                if int(upload_status) < 0:
+                    logging.error("Something went wrong in livai, session id & status: ",\
+                                  session_id, upload_status)
+                else:            
+                    # Wait until the audio is processed
+                    while not transcribed_status:
+                        time.sleep(1)  # Respect the rate limit
+                        upload_status, transcribed_status = self.upload_status(session_id)
+                    time.sleep(1)
+                    logging.debug("Obtaining the transcription for :" + session_id)
+                    # Get the transcription
+                    headers = {'Authorization' : 'Token ' + self.TOKEN}
+                    params = {'app_session_id' : session_id}
+                    url = 'https://dev.liv.ai/liv_speech_api/session/transcriptions/'
+                    try:
+                        response = requests.get(url, headers = headers, params = params)
+                        logging.debug(str(json.dumps(response.json(), indent=4, sort_keys=True)))
+                        liv_stt.append(str(response.json()["transcriptions"][0]["utf_text"]\
+                                                .encode('utf-8')))
+                    except ConnectionError as e:
+                        logging.error(str(e))
+                        logging.error("New connection error")
+                        liv_stt.append('')
+            except Exception as e:
+                logging.error(str(e))
+                liv_stt.append('')
 
             time.sleep(1) # Respect rate limit
         return liv_stt
