@@ -108,7 +108,7 @@ def main(fpath, ds):
             # Process the text to remove (), :, etc
             ref_text_list.append(pre_process_srt(subtitle.text))
                     
-        with open(os.path.join(fpath,"session_ids.b"), "wb") as f:
+        with open(os.path.join(fpath,"text_list_all.b"), "wb") as f:
             pickle.dump([ref_text_list, ds_stt_list, session_id_list], f)
         logging.debug("Running liv ai on the data")
         try:
