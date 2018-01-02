@@ -131,7 +131,7 @@ def main(fpath, ds):
     except KeyboardInterrupt as e:
         logging.error("You have exited the program!")
     except Exception as e:
-        logging.error(str(e))
+        logging.exception(str(e))
     finally:
         try:
             logging.info("Writing output dataframe to:" + os.path.join(fpath,"output_df.b"))
