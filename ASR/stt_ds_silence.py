@@ -112,7 +112,7 @@ def main(fpath, ds):
         # Writing the deepspeech output to text file
         logging.info("Writing the entire ds output to file")
         with open(os.path.join(os.path.dirname(mp4_fpath), 
-                               os.path.basename(mp4_fpath) + "_ds.txt"), "w") as f: 
+                               os.path.basename(mp4_fpath) + "_hyp.txt"), "w") as f: 
             for index, val in enumerate(ds_stt_list):
                 f.write(val + " ")
 
@@ -121,7 +121,7 @@ def main(fpath, ds):
         logging.debug("Extracting: " + srt_fpath)
         subtitles = pysrt.open(srt_fpath)
         with open(os.path.join(os.path.dirname(srt_fpath), 
-                               os.path.basename(srt_fpath) + ".txt"), "w") as f: 
+                               os.path.basename(srt_fpath) + "_ref.txt"), "w") as f: 
             for index, subtitle in enumerate(subtitles):
                 f.write(pre_process_srt(subtitle.text) + " ")
 
