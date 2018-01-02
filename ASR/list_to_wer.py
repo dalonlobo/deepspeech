@@ -13,11 +13,13 @@ import text # WER calulation module from DS repo, it uses Lavenstien distance
 import wer
 import logging
 import argparse
+import os
 
 from timeit import default_timer as timer
 
 def convert_to_wer(fpath, model_type):
-    
+    foldername = os.path.basename(fpath)
+    fpath = os.path.join(fpath, "output_df.b")
     # Read the bianry file with lists
     logging.info("Reading file: " + fpath)
     with open(fpath, "rb") as f:
@@ -66,6 +68,8 @@ def convert_to_wer(fpath, model_type):
     logging.info("Mean of WER using text.py and wer.py are given below: ")
     logging.info("text.py WER average for " + fpath + ": " + str(werds_df.mean()))
     logging.info("wer.py WER average for " + fpath + ": " + str(wer_df.mean()))
+    
+    return [foldername, werds_df.mean(), wer_df.mean()]
 
 
 if __name__ == "__main__":
@@ -83,7 +87,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logging.info("WER count program started...")
     start_time = timer()
-    convert_to_wer(args.fpath, args.model_type)
+    folders = []
+    for root, dirs, files in os.walk("/home/dalonlobo/deepspeech_models/deepspeech"):
+        folders.append(root)  
+    errors = []
+    for folder in folders[1:]:
+        errors.append(convert_to_wer(args.fpath, args.model_type))
     total_time = timer() - start_time
     logging.info('Entire program ran in %0.3f minutes.' % (total_time / 60))
+    for error in errors:
+        print(*error, sep=" : ", end="\n")
     logging.info("...END...")
