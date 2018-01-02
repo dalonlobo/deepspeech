@@ -88,11 +88,11 @@ if __name__ == "__main__":
     logging.info("WER count program started...")
     start_time = timer()
     folders = []
-    for root, dirs, files in os.walk("/home/dalonlobo/deepspeech_models/deepspeech"):
+    for root, dirs, files in os.walk(args.fpath):
         folders.append(root)  
     errors = []
     for folder in folders[1:]:
-        errors.append(convert_to_wer(args.fpath, args.model_type))
+        errors.append(convert_to_wer(folder, args.model_type))
     total_time = timer() - start_time
     logging.info('Entire program ran in %0.3f minutes.' % (total_time / 60))
     for error in errors:
