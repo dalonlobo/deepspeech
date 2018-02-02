@@ -389,7 +389,7 @@ if __name__ == '__main__':
 	# V for video IDs, 'vi' for video id and information 
 	#dumpPlaylistorChannelInfo(sys.argv[1], 'vi')   #'v' for dumping only video ids 
 #	main(sys.argv[1])	
-	df = pd.read_table('single_ted_video.xlsx', header=None)
+	df = pd.read_table('cisco_1_vid.xlsx', header=None)
 	for index, playlistid in df.iterrows():
 		print("Reading this playlist id: ", playlistid[0])
 		main(playlistid[0])

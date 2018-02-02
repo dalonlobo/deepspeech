@@ -88,6 +88,7 @@ def main(fpath, ds):
         )
 
         ds_stt_list = []
+        total_chunks = len(chunks)
         for index, chunk in enumerate(chunks):
 #            if index < 3:
 #                break
@@ -97,7 +98,7 @@ def main(fpath, ds):
             # We can assume 16kHz
             audio_length = len(audio) * ( 1 / 16000)
             
-            logging.info('Running segment number {}'.format(index))
+            logging.info('Running segment number {}/{}'.format(index, total_chunks))
             logging.info('Running inference.')
             inference_start = timer()
             ds_stt_list.append(ds.stt(audio, fs))
